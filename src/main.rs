@@ -2,13 +2,14 @@ extern crate amethyst;
 
 use amethyst::{
     prelude::*,
-    renderer::{DisplayConfig, DrawFlat, Pipeline, PosNormTex, RenderBundle, Stage},
+    renderer::{DisplayConfig, DrawFlat, DrawFlat2D, Pipeline, PosNormTex, RenderBundle, Stage},
     utils::application_root_dir,
+    core::transform::TransformBundle,
+    input::InputBundle,
 };
 
-struct Example;
-
-impl SimpleState for Example {}
+mod pong;
+use crate::pong::Pong;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -21,13 +22,25 @@ fn main() -> amethyst::Result<()> {
 
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
-            .clear_target([0.00196, 0.23726, 0.21765, 1.0], 1.0)
-            .with_pass(DrawFlat::<PosNormTex>::new()),
+            .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
+            .with_pass(DrawFlat2D::new()),
     );
 
-    let game_data =
-        GameDataBuilder::default().with_bundle(RenderBundle::new(pipe, Some(config)))?;
-    let mut game = Application::new("./", Example, game_data)?;
+    let binding_path = format!(
+        "{}/resources/bindings_config.ron",
+        application_root_dir()
+    );
+
+    let input_bundle = InputBundle::<String, String>::new()
+        .with_bindings_from_file(binding_path)?;
+
+    let game_data = GameDataBuilder::default()
+        .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())? 
+        .with_bundle(TransformBundle::new())?
+        .with_bundle(input_bundle)?;
+
+
+    let mut game = Application::new("./", Pong, game_data)?;
 
     game.run();
 
